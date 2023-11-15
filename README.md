@@ -39,6 +39,15 @@ We will not need any special computers or equipment but it would be helpful to p
 We will also most likely be doing most of our coding/implementation on the GHC machines as they already provide a C++ compiler as well as any other libraries we may need
 
 ## Goals and Deliverables
+For our goals, we plan on achieving bug-free and high-performance implementations for sequential, lock, and lock-free. While not expecting perfect speedup, we hope to have a speedup of lock-free > lock > sequential. 
+
+To benchmark these implementations, we will also be building large demo traces where the correctness will be evaluated via the final state of the tree. Our demo programs will be programmed such that no matter the computation order, the final state of the tree should be identical. In addition, we will have different demo programs to mimic different types of access patterns. 
+
+If these goals happen to be met faster than we expected, we could spend more time on gaining further optimizations; however, if we deem that to not be possible, we could also try making programs that could take advantage of the lock-free splay tree. We would do this just as a showcase of the algorithm and the structure, and possibly use the three different implementations on this program to show even further the performance differences. If we choose not to do this in the event we have more time, we could also use the knowledge that we gained while implementing the lock-free splay tree to try implementing another lock-free tree structure.
+
+If the converse were to happen and we end up behind schedule, we most likely would start chasing the completion and correctness of the algorithm instead of speed. We would at worst still want to implement the lock-free splay tree and not worry about the speed. If things are moving even slower than that, we would want to finish the fine-grained lock implementation splay tree. For this, we hope that if we are this behind schedule, we can still at least try to optimize the fine-grained lock implementation as much as possible.
+
+For a demo program, we can run our algorithm and show its modifications and rotations . The demo would have very simple constraints, such as only 2-4 threads and a short data stream. For each access, we can display the most recent rotation, the tree’s change in structure, and which thread was responsible. We also plan on showing the speedup graphs from the different implementations.
 
 
 ## Platform Choice
@@ -47,3 +56,10 @@ We have chosen to use C++ to do our implementations. C++ is a lower level langua
 As for the computers that we will be using, we will be using the GHC machines as we do not have the same exact specifications on our local machines. We both have different core counts which could affect the results of some of our performance tests. As we don’t want to introduce any confounding variables to our performance tests if we run tests separately on our local systems, we want to use something that we know will be identical in terms of hardware, thus we decided upon using the GHC machines.
 
 ## Schedule
+
+* 11/15 - 11/22: Sequential Algo & Source Reading
+* 11/23-11/26: Thanksgiving Break
+* 11/27-12/4: Trace Construction & Finegrained locking 
+* 12/5 - 12/12: Final lock-free algorithm
+* 12/13 - 12/14: Work on Final Report 
+
