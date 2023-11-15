@@ -6,6 +6,12 @@ Team Members: Charles Lu, Roland Liu (czlu, rolandl)
 In our project, we plan on implementing a lock-free splay tree, a self-balancing binary tree that reduces access time of frequently accessed elements. We will build a sequential version, a lock version, and a lock-free version and run traces to compare their performance. We will likely be using pthreads for both concurrent implementations and mutex locks to implement the lock version.
 
 ## Background
+Self-balancing binary trees have been a valuable data structure with two core properties: the ordering invariant, to support ordered datasets, and the height invariant, to support log(n) accesses, deletes, and insertions. The splay tree incorporates an additional property, which is that recently accessed elements tend to be near the root of the tree. This results in “hot” nodes having shorter access times, while “cold” nodes take longer to traverse through the tree. Splay trees have found niche applications in caching, garbage collection, and dataset processing.
+
+The core difference between splay trees lies in how the rotations are performed when auto-balancing, where the rotations are split into three main cases: zig, zig zag, and zig zig. The type of rotation is dependent on the positioning of a node, its parent, and its grandparent. The set of rotations can be seen below (Figure 1, 2, 3), where node x is accessed. As shown, the node that is accessed is always moved closer to the root.  
+
+![zig rotation](images/figure1.png)
+*Figure 1: zig rotation*
 
 ## Challenges
 The difficulties that come with the problem of implementing a lock-free splay tree will be in figuring out how to write correct but optimized algorithms for things like splaying the tree, inserting, and deleting. Because we are prioritizing speed first and foremost, we will want to make sure that the code does not spend too much time stuck on CAS instructions, but like we saw in lecture, minimizing the constraints on when a program can continue through a CAS instruction can lead to issues like the ABA problem. The maintaining of correctness while still looking for optimizations, we believe, will be one of our largest challenges.
