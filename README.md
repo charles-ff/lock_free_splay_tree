@@ -26,6 +26,7 @@ We will also most likely be doing most of our coding/implementation on the GHC m
 
 ## Platform Choice
 We have chosen to use C++ to do our implementations. C++ is a lower level language and thus will allow us to have more granularity of control when we write our code. Having more control over what our code can do will also allow us to optimize our code better. We will also be using pthreads to run our traces as pthreads allow for an easy and effective way to spawn multiple concurrent processes. Because we do not care so much about the actual parallel processes and more about how the processes interact with the splay tree, we are not so concerned about finding the most optimized parallel system. And because all the implementations will be ran using the same parallel system and we only really care about the comparison between each implementation and not the overall exact speed, pthreads will give us an easy and efficient way to run performance tests. 
+
 As for the computers that we will be using, we will be using the GHC machines as we do not have the same exact specifications on our local machines. We both have different core counts which could affect the results of some of our performance tests. As we don’t want to introduce any confounding variables to our performance tests if we run tests separately on our local systems, we want to use something that we know will be identical in terms of hardware, thus we decided upon using the GHC machines.
 
 ## Schedule
