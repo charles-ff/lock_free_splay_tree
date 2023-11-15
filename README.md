@@ -16,8 +16,8 @@ The correctness of our implementations will definitely be a challenge, but the e
 
 ## Resources
 We will not need any special computers or equipment but it would be helpful to possibly use the PSC machines in order to test our code using higher/different numbers of processors. We won’t be using any code bases or existing code as we want to write everything ourselves to fully understand the intricacies and nuances of the structure. We will however be referring to some of the resources that discuss splay trees in 15451. Here are the links to the resources:
-https://www.cs.cmu.edu/~15451-f23/lectures/lecture08-splay-trees.pdf
-https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf
++ https://www.cs.cmu.edu/~15451-f23/lectures/lecture08-splay-trees.pdf
++ https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf
 
 We will also most likely be doing most of our coding/implementation on the GHC machines as they already provide a C++ compiler as well as any other libraries we may need
 
