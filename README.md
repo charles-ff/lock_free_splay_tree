@@ -8,10 +8,21 @@ In our project, we plan on implementing a lock-free splay tree, a self-balancing
 ## Background
 Self-balancing binary trees have been a valuable data structure with two core properties: the ordering invariant, to support ordered datasets, and the height invariant, to support log(n) accesses, deletes, and insertions. The splay tree incorporates an additional property, which is that recently accessed elements tend to be near the root of the tree. This results in “hot” nodes having shorter access times, while “cold” nodes take longer to traverse through the tree. Splay trees have found niche applications in caching, garbage collection, and dataset processing.
 
-The core difference between splay trees lies in how the rotations are performed when auto-balancing, where the rotations are split into three main cases: zig, zig zag, and zig zig. The type of rotation is dependent on the positioning of a node, its parent, and its grandparent. The set of rotations can be seen below (Figure 1, 2, 3), where node x is accessed. As shown, the node that is accessed is always moved closer to the root.  
+The core difference between splay trees lies in how the rotations are performed when auto-balancing, where the rotations are split into three main cases: zig, zig zag, and zig zig. The type of rotation is dependent on the positioning of a node, its parent, and its grandparent. The set of rotations can be seen below (Figure 1, 2, 3), where node **x** is accessed. As shown, the node that is accessed is always moved closer to the root.  
 
 ![zig rotation](images/figure1.png)
+
 *Figure 1: zig rotation*
+
+![zig zag rotation](images/figure2.png)
+
+*Figure 2: zig zag rotation*
+
+![zig zig rotation](images/figure3.png)
+
+*Figure 3: zig zig rotation*
+
+Applications from splay-trees can benefit from parallelism to support concurrent accesses. Parallel threads can operate upon the same tree structure in shared memory, as long as race conditions and illegal accesses are prevented. One simple solution would be to use locks, locking the structure whenever a thread is accessing the tree. However, an algorithm with locks is a blocking algorithm, where a single thread may forever prevent any thread from accessing the data structure. In the case where the thread holding the lock stalls or crashes, no other threads can proceed with their work. A lock-free implementation, on the other hand, will ensure that at any given moment, a thread will be accessing the tree.
 
 ## Challenges
 The difficulties that come with the problem of implementing a lock-free splay tree will be in figuring out how to write correct but optimized algorithms for things like splaying the tree, inserting, and deleting. Because we are prioritizing speed first and foremost, we will want to make sure that the code does not spend too much time stuck on CAS instructions, but like we saw in lecture, minimizing the constraints on when a program can continue through a CAS instruction can lead to issues like the ABA problem. The maintaining of correctness while still looking for optimizations, we believe, will be one of our largest challenges.
