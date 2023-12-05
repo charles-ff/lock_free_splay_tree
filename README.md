@@ -58,8 +58,11 @@ As for the computers that we will be using, we will be using the GHC machines as
 ## Schedule
 
 * 11/15 - 11/22: Sequential Algo & Source Reading
-* 11/23-11/26: Thanksgiving Break
-* 11/27-12/4: Trace Construction & Finegrained locking 
-* 12/5 - 12/12: Final lock-free algorithm
+* 11/23 - 11/26: Thanksgiving Break
+* 11/27 - 12/4: Trace Construction & Finegrained locking 
+* 12/5 - 12/7: Debugging and testing Finegrained locking implementation
+* 12/7 - 12/10: Work on completing lock-free implementation
+* 12/10 - 12/12: Debugging and testing of lock-free implementation
+* 12/12 - 12/13: Collect all the data we need, write more specficic test cases if needed
 * 12/13 - 12/14: Work on Final Report 
 
