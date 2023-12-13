@@ -204,14 +204,14 @@ Node* find(Node* root, int val, int& found) {
     return root;
 }
 
-int main() {
-    Node* A = NULL, *S = NULL;
-    S = insert(S, 1);
-    S = insert(S, 2);
-    S = insert(S, 3);
-    printTree(S);
-    int buf;
-    S = find(S, 1, buf);
-    S = find(S, 2, buf);
-    printTree(S);
-}
+// int main() {
+//     Node* A = NULL, *S = NULL;
+//     S = insert(S, 1);
+//     S = insert(S, 2);
+//     S = insert(S, 3);
+//     printTree(S);
+//     int buf;
+//     S = find(S, 1, buf);
+//     S = find(S, 2, buf);
+//     printTree(S);
+// }
