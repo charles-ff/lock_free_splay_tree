@@ -1,39 +1,38 @@
 #include "sequential.cpp"
+#include "correctness.cpp"
 #include <chrono>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
 
-typedef struct{
-  pthread_t thread_id;
-  int pid;
-  SplayTree* tree;
-} thread_info_t;
+int main(int argc, char *argv[]){
+  if (argc != 2){
+    cout << "Usage: ./coarse \"test case file\" " << endl;
+    return 1;
+  }
 
-
-bool BSTinvariant(Node* root, int left, int right){
-    if (root == NULL)  return true;
-    if(root->val < right && root->val > left){
-        return BSTinvariant(root->left, left, root->val) && BSTinvariant(root->right, root->val, right);
+  vector<string> work;
+  ifstream file(argv[1]);
+  string line;
+  if (file.is_open()){
+    while (getline(file, line)){
+      work.push_back(line);
     }
-    else{
-      return false;
-    } 
-}
+  } else{
+    cout << "Unable to open file" << endl;
+    return 1;
+  }
 
-bool checkBST(Node* root) {
-    int min = -100000000;
-    int max = 10000000;
-    return BSTinvariant(root, min, max);
-}
-
-
-int main(){
   SplayTree tree;
   auto start = chrono::high_resolution_clock::now();
-  for (int i = 1; i <= 20; i ++){
-    tree.insert(i);
+  for (auto task : work){
+    if (task[0] == 'f'){
+      tree.find(stoi(task.substr(2)));
+    } else if (task[0] == 'i'){
+      tree.insert(stoi(task.substr(2)));
+    }
   }
   auto stop = chrono::high_resolution_clock::now();
   auto duration = chrono::duration_cast<std::chrono::microseconds>(stop - start);
