@@ -97,64 +97,12 @@ void printTree(Node* root, int height=0) {
     printTree(root->right, height+1);
 }
 
-// AVL INTERFACE
-
-// Node* insert_AVL(Node* root, int val) {
-//     // 
-//     if (root == NULL) return new Node(val); 
-
-//     if (val < root->val) {
-//         // GOING LEFT
-//         root->left = insert_AVL(root->left, val);
-//     } else if (val == root->val) {
-//         // already exists
-//         return root;
-//     } else {
-//         root->right = insert_AVL(root->right, val);
-//     }
-
-//     root->height = 1 + max(height(root->left), height(root->right));
-//     int b = balance(root);
-//     //LL
-//     if (b > 1 && val < root->left->val) return rightRotate(root);
-//     //LR
-//     if (b > 1 && val > root->left->val) {
-//         root->left = leftRotate(root->left);
-//         return rightRotate(root);
-//     }
-
-//     // RR
-//     if (b < -1 && val > root->right->val) return leftRotate(root);
-    
-//     // RL
-//     if (b < -1 && val < root->right->val) {
-//         root->right = rightRotate(root->right);
-//         return leftRotate(root);
-//     }
-
-//     // BALANCED
-//     return root;
-// }
-
-// return 1 if found, 0 if not found
-// int find_AVL(Node* root, int val) {
-//     if (root == NULL) return 0;
-//     if (val < root->val) {
-//         return find_AVL(root->left, val);
-//     } else if (val == root->val) {
-//         return 1;
-//     } else {
-//         return find_AVL(root->right, val);
-//     }
-// }
-
 /// SPLAY TREE INTERFACE
 
 class SplayTree {
-private:
+public:
     Node* root;
 
-public:
     SplayTree() {
         root = NULL;
     }
@@ -288,21 +236,21 @@ public:
 
 };
 
-int main() {
-    SplayTree S;
-    S.insert(1);
-    S.insert(2);
-    S.insert(3);
-    // S.print();
-    cout << S.find(1)->key << endl;
-    cout << S.find(2)->key << endl;
-    cout << ((S.find(5) == NULL) ? "GOOD" : "BAD") << endl;
-    // S.print();
-    for (int i = 4; i < 20; i++) {
-        S.insert(i);
-        // S.print();
-        // cout << "-----" << endl;
-    }
-    S.find(4);
-    S.print();
-}
+// int main() {
+//     SplayTree S;
+//     S.insert(1);
+//     S.insert(2);
+//     S.insert(3);
+//     // S.print();
+//     cout << S.find(1)->key << endl;
+//     cout << S.find(2)->key << endl;
+//     cout << ((S.find(5) == NULL) ? "GOOD" : "BAD") << endl;
+//     // S.print();
+//     for (int i = 4; i < 20; i++) {
+//         S.insert(i);
+//         // S.print();
+//         // cout << "-----" << endl;
+//     }
+//     S.find(4);
+//     S.print();
+// }
