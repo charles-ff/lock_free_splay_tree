@@ -3,17 +3,20 @@ using namespace std;
 
 
 struct Node {
+    int key;
     int val;
     int height;
     Node* left;
     Node* right;
-    Node(): val(0), height(1), left(nullptr), right(nullptr) {};
-    Node(int x): val(x), height(1), left(nullptr), right(nullptr) {};
+    Node* parent;
+    Node(): key(0), height(1), left(nullptr), right(nullptr), parent(nullptr) {};
+    Node(int x): key(x), height(1), left(nullptr), right(nullptr), parent(nullptr) {};
+    Node(int x, Node* p): key(x), height(1), left(nullptr), right(nullptr), parent(p) {};
 };
 
 int height(Node* root) {
     if (root == NULL) return 0;
-    return root->val;
+    return root->key;
 }
 
 int balance(Node* root) {
@@ -30,8 +33,23 @@ Node* rightRotate(Node* root) {
     L->right = root;
     root->left = LR;
 
+    L->parent = root->parent;
+    if (L->parent) {
+        if (L->key < L->parent->key) {
+            L->parent->left = L;
+        } else {
+            L->parent->right = L;
+        }
+    }
+
+
+    root->parent = L;
+    if (LR) LR->parent = root; 
+
     root->height = 1 + max(height(root->left), height(root->right));
     L->height = 1 + max(height(L->left), height(L->right));
+
+    
 
     return L;
 }
@@ -42,9 +60,23 @@ Node* leftRotate(Node* root) {
 
     R->left = root;
     root->right = RL;
+    
+    R->parent = root->parent;
+    if (R->parent) {
+        if (R->key < R->parent->key) {
+            R->parent->left = R;
+        } else {
+            R->parent->right = R;
+        }
+    }
+
+    root->parent = R; 
+    if (RL) RL->parent = root; 
 
     root->height = 1 + max(height(root->left), height(root->right));
     R->height = 1 + max(height(R->left), height(R->right));
+    
+    
 
     return R;
 }
@@ -53,12 +85,12 @@ void printTree(Node* root, int height=0) {
     if (root == NULL) return;
     
     if (height == 0){
-        printf("Root: %d\n", root->val);
+        printf("Root: %d\n", root->key);
     } else {
         for (size_t i = 0; i < height; i++){
             printf("| ");
         }
-        printf("Node: %d\n", root->val);
+        printf("Node: %d, Parent: %d\n", root->key, root->parent->key);
     }
 
     printTree(root->left, height+1);
@@ -67,151 +99,210 @@ void printTree(Node* root, int height=0) {
 
 // AVL INTERFACE
 
-Node* insert_AVL(Node* root, int val) {
-    if (root == NULL) return new Node(val); 
+// Node* insert_AVL(Node* root, int val) {
+//     // 
+//     if (root == NULL) return new Node(val); 
 
-    if (val < root->val) {
-        // GOING LEFT
-        root->left = insert_AVL(root->left, val);
-    } else if (val == root->val) {
-        // already exists
-        return root;
-    } else {
-        root->right = insert_AVL(root->right, val);
-    }
+//     if (val < root->val) {
+//         // GOING LEFT
+//         root->left = insert_AVL(root->left, val);
+//     } else if (val == root->val) {
+//         // already exists
+//         return root;
+//     } else {
+//         root->right = insert_AVL(root->right, val);
+//     }
 
-    root->height = 1 + max(height(root->left), height(root->right));
-    int b = balance(root);
-    //LL
-    if (b > 1 && val < root->left->val) return rightRotate(root);
-    //LR
-    if (b > 1 && val > root->left->val) {
-        root->left = leftRotate(root->left);
-        return rightRotate(root);
-    }
+//     root->height = 1 + max(height(root->left), height(root->right));
+//     int b = balance(root);
+//     //LL
+//     if (b > 1 && val < root->left->val) return rightRotate(root);
+//     //LR
+//     if (b > 1 && val > root->left->val) {
+//         root->left = leftRotate(root->left);
+//         return rightRotate(root);
+//     }
 
-    // RR
-    if (b < -1 && val > root->right->val) return leftRotate(root);
+//     // RR
+//     if (b < -1 && val > root->right->val) return leftRotate(root);
     
-    // RL
-    if (b < -1 && val < root->right->val) {
-        root->right = rightRotate(root->right);
-        return leftRotate(root);
-    }
+//     // RL
+//     if (b < -1 && val < root->right->val) {
+//         root->right = rightRotate(root->right);
+//         return leftRotate(root);
+//     }
 
-    // BALANCED
-    return root;
-}
+//     // BALANCED
+//     return root;
+// }
 
 // return 1 if found, 0 if not found
-int find_AVL(Node* root, int val) {
-    if (root == NULL) return 0;
-    if (val < root->val) {
-        return find_AVL(root->left, val);
-    } else if (val == root->val) {
-        return 1;
-    } else {
-        return find_AVL(root->right, val);
-    }
-}
+// int find_AVL(Node* root, int val) {
+//     if (root == NULL) return 0;
+//     if (val < root->val) {
+//         return find_AVL(root->left, val);
+//     } else if (val == root->val) {
+//         return 1;
+//     } else {
+//         return find_AVL(root->right, val);
+//     }
+// }
 
 /// SPLAY TREE INTERFACE
 
-Node* splay(Node* root, int val) {
-    if (root == NULL || root->val == val) return root;
-    if (val < root->val) {
-        // GOING LEFT
-        if (root->left == NULL) {
-            // EMPTY LEFT
-            return root;
-        } else if (root->left->val == val) {
-            // zig
-            return rightRotate(root);
-        } else if (val < root->left->val) {
-            // LEFT LEFT< zigzig
+class SplayTree {
+private:
+    Node* root;
 
-            root->left->left = splay(root->left->left, val);
-            return rightRotate(rightRotate(root));
+public:
+    SplayTree() {
+        root = NULL;
+    }
+
+
+    void print() {
+        printTree(root);
+    }
+
+
+    void splay(Node* node) {
+        int key = node->key;
+
+
+        while (node->parent != NULL) {
             
-        } else if (root->left->val < val) {
-            // LEFT RIGHT < zigzag
-            
-            root->left->right = splay(root->left->right, val);
-            root->left = leftRotate(root->left);
-            return rightRotate(root->left);
-        } 
+            // while the current node isn't the root
 
-    } else if (root->val < val) {
-        // GOING RIGHT
-        if (root->right == NULL) {
-            // EMPTY RIGHT
-            return root;
-        } else if (val == root->right->val) {
-            // zag
-            return leftRotate(root);
-        } else if (val < root->right->val) {
-            // GOING RIGHT LEFT (zag zig)
-            root->right->left = splay(root->right->left, val);
-            root->right = rightRotate(root->right);
-            return leftRotate(root);
-        } else if (root->right->val < val) {
-            root->right->right = splay(root->right->right, val);
-            return leftRotate(leftRotate(root));
+            Node* p = node->parent;
+
+            if (p->key < key) {
+                // PARENT 
+                //        \\ 
+                //          NODE
+                Node* gp = p->parent;
+                if (gp == NULL) {
+                    // zig case
+                    node = leftRotate(p);
+                } else if (gp->key < p->key) {
+                    // zig zig case
+                    // GRANDPARENT 
+                    //        \\ 
+                    //          PARENT
+                    //              \\ 
+                    //                NODE 
+                    node = leftRotate(leftRotate(gp));
+                } else if (gp->key > p->key) {
+                    // zig zag case
+                    //              GRANDPARENT 
+                    //             // 
+                    //          PARENT
+                    //              \\ 
+                    //                NODE
+                    leftRotate(p);
+                    node = rightRotate(gp);
+                } else {
+                    // grandparent node has same key as current node
+                    assert(false);
+                }
+            } else if (p->key > key) {
+                //            PARENT 
+                //         // 
+                //    NODE
+                Node* gp = p->parent;
+                if (gp == NULL) {
+                    // zig case
+                    node = rightRotate(p);
+                } else if (gp->key > p->key) {
+                    // zig zig case
+                    //          GRANDPARENT 
+                    //        // 
+                    //      PARENT
+                    //      // 
+                    //    NODE 
+                    node = rightRotate(rightRotate(gp));
+                } else if (gp->key < p->key) {
+                    // zig zag case
+                    //   GRANDPARENT 
+                    //           \\ 
+                    //          PARENT
+                    //           // 
+                    //       NODE
+                    rightRotate(p);
+                    node = leftRotate(gp);
+                } else {
+                    // the grandparent is the node wtf!???
+                    assert(false);
+                }
+            } else {
+                // the parent is the node wtf
+                assert(false);
+            }
+
         }
+
+        root = node; 
     }
 
-    // not actually possible.
-    return NULL;
-}
-
-Node* insert(Node* root, int val) {
-    if (root == NULL) {
-        // EMPTY TREE
-        return new Node(val);
-    }
-
-    root = splay(root, val);
-        
-    if (root->val == val) {
-        // duplicate case
-        return root; 
-    } else {
-        Node* res = new Node(val);
-        if (val < root->val) {
-            res->right = root;
-            res->left = root->left;
-            root->left = NULL;
-        } else {
-            res->left = root;
-            res->right = root->right;
-            root->right = NULL;
+    void insert(int key) {
+        if (root == NULL) {
+            // EMPTY TREE WOOO
+            root = new Node(key);
         }
-        return res;
-    }
-}
 
-Node* find(Node* root, int val, int& found) {
-    if (root == NULL) {
-        found = 0;
-        return NULL;
+        Node* ptr = root; 
+        while (ptr->key != key) { 
+            // do something
+            if (ptr->key > key) {
+            //GO LEFT 
+                if (ptr->left == NULL) {
+                    // insert here
+                    ptr->left = new Node(key, ptr);
+                } 
+                ptr = ptr->left;
+            } else {
+                if (ptr->right == NULL) {
+                    // insert here
+                    ptr->right = new Node(key, ptr);
+                } 
+                ptr = ptr->right;
+            }
+        }
+
+        splay(ptr);
     }
-    root = splay(root, val);
-    if (root->val == val) {
-        found = 1;
-    } else {
-        found = 0;
+
+    Node* find(int key) {
+        Node* ptr = root;
+        while (ptr != NULL && ptr->key != key) {
+            if (ptr->key > key) {
+                ptr = ptr->left;
+            } else {
+                ptr = ptr->right;
+            }
+        }
+
+        if (ptr != NULL) splay(ptr);
+        return ptr;
     }
-    return root;
-}
+
+
+};
 
 int main() {
-    Node* A = NULL, *S = NULL;
-    S = insert(S, 1);
-    S = insert(S, 2);
-    S = insert(S, 3);
-    printTree(S);
-    int buf;
-    S = find(S, 1, buf);
-    S = find(S, 2, buf);
-    printTree(S);
+    SplayTree S;
+    S.insert(1);
+    S.insert(2);
+    S.insert(3);
+    // S.print();
+    cout << S.find(1)->key << endl;
+    cout << S.find(2)->key << endl;
+    cout << ((S.find(5) == NULL) ? "GOOD" : "BAD") << endl;
+    // S.print();
+    for (int i = 4; i < 20; i++) {
+        S.insert(i);
+        // S.print();
+        // cout << "-----" << endl;
+    }
+    S.find(4);
+    S.print();
 }
