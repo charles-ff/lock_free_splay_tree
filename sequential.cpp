@@ -81,7 +81,7 @@ Node* leftRotate(Node* root) {
     return R;
 }
 
-void printTree(Node* root, int height=0) {
+void printTree(Node* root, int height=0, bool isLeft=false) {
     if (root == NULL) return;
     
     if (height == 0){
@@ -89,17 +89,74 @@ void printTree(Node* root, int height=0) {
     } else {
         for (size_t i = 0; i < height; i++){
             printf("| ");
+            if (i == height-1) {
+                if (isLeft) printf("L ");
+                else printf("R ");
+            }
         }
         printf("Node: %d, Parent: %d\n", root->key, root->parent->key);
     }
 
-    printTree(root->left, height+1);
-    printTree(root->right, height+1);
+    printTree(root->left, height+1, true);
+    printTree(root->right, height+1, false);
 }
+
+// AVL INTERFACE
+
+// Node* insert_AVL(Node* root, int val) {
+//     // 
+//     if (root == NULL) return new Node(val); 
+
+//     if (val < root->val) {
+//         // GOING LEFT
+//         root->left = insert_AVL(root->left, val);
+//     } else if (val == root->val) {
+//         // already exists
+//         return root;
+//     } else {
+//         root->right = insert_AVL(root->right, val);
+//     }
+
+//     root->height = 1 + max(height(root->left), height(root->right));
+//     int b = balance(root);
+//     //LL
+//     if (b > 1 && val < root->left->val) return rightRotate(root);
+//     //LR
+//     if (b > 1 && val > root->left->val) {
+//         root->left = leftRotate(root->left);
+//         return rightRotate(root);
+//     }
+
+//     // RR
+//     if (b < -1 && val > root->right->val) return leftRotate(root);
+    
+//     // RL
+//     if (b < -1 && val < root->right->val) {
+//         root->right = rightRotate(root->right);
+//         return leftRotate(root);
+//     }
+
+//     // BALANCED
+//     return root;
+// }
+
+// return 1 if found, 0 if not found
+// int find_AVL(Node* root, int val) {
+//     if (root == NULL) return 0;
+//     if (val < root->val) {
+//         return find_AVL(root->left, val);
+//     } else if (val == root->val) {
+//         return 1;
+//     } else {
+//         return find_AVL(root->right, val);
+//     }
+// }
 
 /// SPLAY TREE INTERFACE
 
 class SplayTree {
+private:
+
 public:
     Node* root;
 
@@ -117,7 +174,7 @@ public:
         int key = node->key;
 
 
-        while (node->parent != NULL) {
+        if (node->parent != NULL) {
             
             // while the current node isn't the root
 
@@ -188,7 +245,7 @@ public:
 
         }
 
-        root = node; 
+        if (node->parent == NULL) root = node;
     }
 
     void insert(int key) {
@@ -231,6 +288,63 @@ public:
 
         if (ptr != NULL) splay(ptr);
         return ptr;
+    }
+
+    void remove(int key) {
+        Node* prev = root;
+        Node* ptr = root;
+        bool isLeft = 0;
+        while (ptr != NULL && ptr->key != key) {
+            if (ptr->key > key) {
+                isLeft = true; 
+                ptr = ptr->left;
+            } else if (ptr->key < key) {
+                isLeft = false;
+                ptr = ptr->right; 
+            } else {
+                if (prev == root) {
+                    if (ptr->right != NULL) {
+                        root = ptr->right;
+                        root->parent = NULL;
+                    }
+
+                    if (ptr->left != NULL) {
+                        if (ptr->right != NULL) {
+                            root->left = ptr->left;
+                            ptr->left->parent = root; 
+                        } else {
+                            root = ptr->left;
+                            root->parent = NULL;
+                        }
+                    }
+                } else {
+                    if (ptr->right != NULL) {
+                        if (isLeft) {
+                            prev->left = ptr->right;
+                        } else {
+                            prev->right = ptr->right;
+                        }
+                        ptr->right->parent = prev;
+                    }
+
+                    if (ptr->left != NULL) {
+                        if (ptr->right != NULL) {
+                            root->left = ptr->left;
+                            ptr->left->parent = root; 
+                        } else {
+                            if (isLeft) {
+                                prev->left = ptr->left;
+                            } else {
+                                prev->right = ptr->left;
+                            }
+                            ptr->left->parent = prev;
+                        }
+                    }
+
+                        
+                }
+            }
+        } 
     }
 
 

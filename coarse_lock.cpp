@@ -118,7 +118,7 @@ public:
         int key = node->key;
 
 
-        while (node->parent != NULL) {
+        if (node->parent != NULL) {
             
             // while the current node isn't the root
 
@@ -189,7 +189,7 @@ public:
 
         }
 
-        root = node; 
+        if (node->parent == NULL) root = node; 
     }
 
     void insert(int key) {
@@ -236,6 +236,63 @@ public:
         if (ptr != NULL) splay(ptr);
         pthread_mutex_unlock(&global_lock);
         return ptr;
+    }
+
+    void remove(int key) {
+        pthread_mutex_lock(&global_lock);
+        Node* prev = root;
+        Node* ptr = root;
+        bool isLeft = 0;
+        while (ptr != NULL && ptr->key != key) {
+            if (ptr->key > key) {
+                isLeft = true; 
+                ptr = ptr->left;
+            } else if (ptr->key < key) {
+                isLeft = false;
+                ptr = ptr->right; 
+            } else {
+                if (prev == root) {
+                    if (ptr->right != NULL) {
+                        root = ptr->right;
+                        root->parent = NULL;
+                    }
+
+                    if (ptr->left != NULL) {
+                        if (ptr->right != NULL) {
+                            root->left = ptr->left;
+                            ptr->left->parent = root; 
+                        } else {
+                            root = ptr->left;
+                            root->parent = NULL;
+                        }
+                    }
+                } else {
+                    if (ptr->right != NULL) {
+                        if (isLeft) {
+                            prev->left = ptr->right;
+                        } else {
+                            prev->right = ptr->right;
+                        }
+                        ptr->right->parent = prev;
+                    }
+
+                    if (ptr->left != NULL) {
+                        if (ptr->right != NULL) {
+                            root->left = ptr->left;
+                            ptr->left->parent = root; 
+                        } else {
+                            if (isLeft) {
+                                prev->left = ptr->left;
+                            } else {
+                                prev->right = ptr->left;
+                            }
+                            ptr->left->parent = prev;
+                        }
+                    }
+                }
+            }
+        }
+        pthread_mutex_unlock(&global_lock); 
     }
 
 
