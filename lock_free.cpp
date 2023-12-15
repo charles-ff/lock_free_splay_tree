@@ -107,6 +107,7 @@ public:
 
       //issa duplicate, don't do anything
       if (location != nullptr && location->node->key == key){
+        lazySplay(location->node);
         return;
       }
       else{ //no duplicates, time to actually insert
@@ -131,6 +132,7 @@ public:
             }
             expected = FLAG::CHILD_IN_USE;
             location->node->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+            lazySplay(location->node);
             return;
           } else{
             expected = FLAG::CHILD_IN_USE;
@@ -181,9 +183,18 @@ public:
     return traverse(gp, p, node, next, key);
   }
 
+  bool find(int key) {
+    FamilyLine* location = traverse(nullptr, nullptr, nullptr, root, key);
+    while (location->valid == 0) location = traverse(nullptr, nullptr, nullptr, root, key);
+    // cout << "HELOLO" << endl;
+    bool found = (location != NULL);
+    if (found) lazySplay(location->node);
+    return found;
+  }
+
   void remove(int key){
     while(true){
-      cout << "attempting removal of " << key << endl;
+      // cout << "attempting removal of " << key << endl;
       //keep looping until the path to the node of deletion is not being concurrently acted upon
       FamilyLine* location = traverse(nullptr, nullptr, nullptr, root, key);
       while (location->valid == 0){
@@ -191,23 +202,23 @@ public:
       }
 
       if (location->node->key != key){ //the key is not in the the tree, do nothing
-        cout << "i aint find shit" << endl;
+        // cout << "i aint find nothing" << endl;
         return;
       } else { //the key is in the tree, time to delete
           FLAG expected = FLAG::NOT_USE;
           if (location->node->flag.compare_exchange_weak(expected, FLAG::REMOVE)){
             //node has 2 children, lets delay deletion for a bit, too much contention if we do now
             if (location->node->left != nullptr && location->node->right != nullptr){
-              cout << "logically rm" << endl;
+              // cout << "logically rm" << endl;
               bool expected2 = false;
               if(location->node->removed.compare_exchange_weak(expected2, true)){ //logically remove
-                cout << "set logic rm flag" << endl;
+                // cout << "set logic rm flag" << endl;
               }
               expected = FLAG::REMOVE;
               location->node->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
               return;
             } else{ //node has <2 children, there won't be too much contention, we can do now
-                cout << "physically rm" << endl;
+                // cout << "physically rm" << endl;
                 bool expected2 = false;
                 location->node->removed.compare_exchange_weak(expected2, true); //logically remove
                 Node* temp;
@@ -235,6 +246,7 @@ public:
                 bool isLeft = false;
                 if (location->p->left == location->node) isLeft = true;
                 Node* expectedChild = location->node;
+                
                 //physically removing
                 if (isLeft){
                   location->p->left.compare_exchange_weak(expectedChild, temp);
@@ -253,9 +265,143 @@ public:
     }
   }
 
+  void lazySplay(Node* node) {
+      FamilyLine* location = traverse(nullptr, nullptr, nullptr, root, node->key);
+      while (location->valid == 0){
+        // free(location);
+        location = traverse(nullptr, nullptr, nullptr, root, node->key);
+      }
 
+      if (location == NULL || location->node != node) return;
+      if (location->node == NULL || location->p == NULL || location->gp == NULL || location->ggp == NULL) return;
 
+      bool flags = false;
+    
+      FLAG expected = FLAG::NOT_USE;
+      if (location->ggp->flag.compare_exchange_weak(expected, FLAG::IN_USE)) {
+        expected = FLAG::NOT_USE;
+        if (location->gp->flag.compare_exchange_weak(expected, FLAG::IN_USE)) {
+          expected = FLAG::NOT_USE;
+          if (location->p->flag.compare_exchange_weak(expected, FLAG::IN_USE)) {
+            expected = FLAG::NOT_USE;
+            if (location->node->flag.compare_exchange_weak(expected, FLAG::IN_USE)) {
+              flags &= 1;
+            }
+          }
+        }
+      }
 
+    if (flags == false) {
+      // RESET FLAGS
+      expected = FLAG::IN_USE;
+      location->ggp->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+      expected = FLAG::IN_USE;
+      location->gp->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+      expected = FLAG::IN_USE;
+      location->p->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+      expected = FLAG::IN_USE;
+      location->node->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+      return;
+
+    } else {
+      Node* gp = new Node(location->gp->key);
+      Node* p = new Node(location->p->key);
+      Node* n = new Node(location->node->key);
+      Node* tmp;
+
+      if (p->key < node->key) {
+        // PARENT 
+        //        \\ 
+        //          NODE
+        if (gp->key < p->key) {
+            // zig zig case
+            // GRANDPARENT                            NODE
+            //        \\                            //
+            //          PARENT       =>          PARENT
+            //              \\                  //
+            //                NODE      GRANDPARENT
+            tmp = nullptr;
+            gp->left.compare_exchange_weak(tmp, location->gp->left);
+            gp->right.compare_exchange_weak(tmp, location->p->left);
+            p->left.compare_exchange_weak(tmp, gp);
+            p->right.compare_exchange_weak(tmp, location->node->left);
+            n->left.compare_exchange_weak(tmp, p);
+            n->right.compare_exchange_weak(tmp, location->node->right);
+        } else if (gp->key > p->key) {
+            // zig zag case
+            //              GRANDPARENT 
+            //             // 
+            //          PARENT              =>         NODE
+            //              \\                      //      ||
+            //                NODE               PARENT     GRANDPARENT
+            tmp = nullptr;
+            gp->left.compare_exchange_weak(tmp, location->node->right);
+            gp->right.compare_exchange_weak(tmp, location->gp->right);
+            p->left.compare_exchange_weak(tmp, location->p->left);
+            p->right.compare_exchange_weak(tmp, location->node->left);
+            n->left.compare_exchange_weak(tmp, p);
+            n->right.compare_exchange_weak(tmp, gp);
+        } else {
+            // grandparent node has same key as current node
+            assert(false);
+        }
+    } else if (p->key > node->key) {
+        //            PARENT 
+        //         // 
+        //    NODE
+        if (gp->key > p->key) {
+            // zig zig case
+            //          GRANDPARENT               NODE
+            //        //                                ||  
+            //      PARENT                =>              PARENT
+            //      //                                        ||
+            //    NODE                                          GRANDPARENT
+            tmp = nullptr;
+            gp->left.compare_exchange_weak(tmp, location->p->right);
+            gp->right.compare_exchange_weak(tmp, location->gp->right);
+            p->left.compare_exchange_weak(tmp, location->gp->left);
+            p->right.compare_exchange_weak(tmp, gp);
+            n->left.compare_exchange_weak(tmp, location->node->left);
+            n->right.compare_exchange_weak(tmp, p);
+        } else if (gp->key < p->key) {
+            // zig zag case
+            //   GRANDPARENT                             
+            //           \\                           
+            //          PARENT      =>            NODE
+            //           //                     //        ||
+            //       NODE             GRANDPARENT           PARENT
+            tmp = nullptr;
+            gp->left.compare_exchange_weak(tmp, location->gp->left);
+            gp->right.compare_exchange_weak(tmp, location->node->left);
+            p->left.compare_exchange_weak(tmp, location->node->right);
+            p->right.compare_exchange_weak(tmp, location->p->right);
+            n->left.compare_exchange_weak(tmp, gp);
+            n->right.compare_exchange_weak(tmp, p);
+        } else {
+            // the grandparent is the node wtf!???
+            assert(false);
+        }
+      }
+
+      if (location->ggp->key < gp->key) {
+        tmp = location->ggp->right;
+        location->ggp->right.compare_exchange_weak(tmp,gp);
+      } else {
+        tmp = location->ggp->left;
+        location->ggp->right.compare_exchange_weak(tmp,gp);
+      }
+
+      // free(location->gp);
+      // free(location->p);
+      // free(location->node);
+      
+      
+      expected = FLAG::IN_USE;
+      location->ggp->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+      free(location);
+      return;
+    }
+  }
 
 
 
