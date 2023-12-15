@@ -18,7 +18,7 @@ enum class ROOT_STATUS{
 
 struct Node{
   int key;
-  bool removed;
+  atomic<bool> removed;
   atomic<Node*> left;
   atomic<Node*> right;
   atomic<FLAG> flag; 
@@ -34,20 +34,33 @@ struct FamilyLine{
   FamilyLine(bool isValid, Node* w, Node* x, Node* y, Node* z): valid(isValid), ggp(w), gp(x), p(y), node(z) {};
 };
 
-void printTree(Node* root, int height=0) {
-    if (root == NULL) return;
+void printTree(Node* root, int height=0, bool isLeft=0) {
+    if (root == nullptr) return;
     
     if (height == 0){
-        printf("Root: %d\n", root->key);
+        printf("Root: %d ", root->key);
+        if (root->removed){
+          printf("(Logically Removed)");
+        }
+        printf("\n");
     } else {
         for (size_t i = 0; i < height; i++){
             printf("| ");
         }
-        printf("Node: %d \n", root->key);
+        if (isLeft){
+          printf("L ");
+        } else{
+          printf("R ");
+        }
+        printf("Node: %d ", root->key);
+        if (root->removed){
+          printf("(Logically removed)");
+        }
+        printf("\n");
     }
 
-    printTree(root->left, height+1);
-    printTree(root->right, height+1);
+    printTree(root->left, height+1, true);
+    printTree(root->right, height+1, false);
 }
 
 
@@ -57,7 +70,7 @@ public:
   atomic<ROOT_STATUS> treeEmpty;
 
   SplayTree() {
-    root = NULL;
+    root = nullptr;
     treeEmpty = ROOT_STATUS::EMPTY; 
   }
 
@@ -86,29 +99,30 @@ public:
 
 
       //keep looping until the location to insert is not being used
-      FamilyLine* location = traverse(NULL, NULL, NULL, root, key);
+      FamilyLine* location = traverse(nullptr, nullptr, nullptr, root, key);
       while (location->valid == 0){
-        location = traverse(NULL, NULL, NULL, root, key);
+        location = traverse(nullptr, nullptr, nullptr, root, key);
       }
 
 
       //issa duplicate, don't do anything
-      if (location->node->key == key){
+      if (location != nullptr && location->node->key == key){
         return;
       }
       else{ //no duplicates, time to actually insert
       //atomically change flag to CHILD_IN_USE in order to prepare for insertion
         Node* node = new Node(key);
         Node* temp;
-        if (location->node->key > key){
+
+        if (location!= nullptr && location->node->key > key){
           temp = location->node->left;
         } else{
           temp = location->node->right;
         }
 
         FLAG expected = FLAG::NOT_USE;
-        if (location->node->flag.compare_exchange_weak(expected, FLAG::CHILD_IN_USE)){
-          if (temp == NULL){
+        if (location != nullptr && location->node->flag.compare_exchange_weak(expected, FLAG::CHILD_IN_USE)){
+          if (temp == nullptr){
             //atomically change the pointer to point to the new node
             if (location->node->key > key){
               location->node->left.compare_exchange_weak(temp, node);
@@ -131,14 +145,14 @@ public:
 
   FamilyLine* traverse(Node* ggp, Node* gp, Node* p, Node* node, int key){
     //recursive base case: we found the key!
-    if (node != NULL && node->key == key){
+    if (node != nullptr && node->key == key){
       return new FamilyLine(true, ggp, gp, p, node);
     }
 
     //continue traversal
     Node* next;
-    if (node ==NULL){
-      next = NULL;
+    if (node ==nullptr){
+      next = nullptr;
     } else if (node->key < key){
       next = node->right;
     } else{
@@ -146,7 +160,7 @@ public:
     }
 
     //we did not find the key!
-    if (next == NULL){
+    if (next == nullptr){
       return new FamilyLine(true, ggp, gp, p, node);
     }
 
@@ -154,19 +168,90 @@ public:
     //using this node or is logically removed, we
     //are going to have to come back
     if (next->flag == FLAG::CHILD_IN_USE){
-      return new FamilyLine(false, NULL, NULL, NULL, NULL);
+      return new FamilyLine(false, nullptr, nullptr, nullptr, nullptr);
     }
     if (next->flag == FLAG::REMOVE){
-      return new FamilyLine(false, NULL, NULL, NULL, NULL);
+      return new FamilyLine(false, nullptr, nullptr, nullptr, nullptr);
     }
     if (next->flag == FLAG::IN_USE){
-      return new FamilyLine(false, NULL, NULL, NULL, NULL);
+      return new FamilyLine(false, nullptr, nullptr, nullptr, nullptr);
     }
 
     //the node is valid, continue traversal
     return traverse(gp, p, node, next, key);
   }
 
+  void remove(int key){
+    while(true){
+      cout << "attempting removal of " << key << endl;
+      //keep looping until the path to the node of deletion is not being concurrently acted upon
+      FamilyLine* location = traverse(nullptr, nullptr, nullptr, root, key);
+      while (location->valid == 0){
+        location = traverse(nullptr, nullptr, nullptr, root, key);
+      }
+
+      if (location->node->key != key){ //the key is not in the the tree, do nothing
+        cout << "i aint find shit" << endl;
+        return;
+      } else { //the key is in the tree, time to delete
+          FLAG expected = FLAG::NOT_USE;
+          if (location->node->flag.compare_exchange_weak(expected, FLAG::REMOVE)){
+            //node has 2 children, lets delay deletion for a bit, too much contention if we do now
+            if (location->node->left != nullptr && location->node->right != nullptr){
+              cout << "logically rm" << endl;
+              bool expected2 = false;
+              if(location->node->removed.compare_exchange_weak(expected2, true)){ //logically remove
+                cout << "set logic rm flag" << endl;
+              }
+              expected = FLAG::REMOVE;
+              location->node->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+              return;
+            } else{ //node has <2 children, there won't be too much contention, we can do now
+                cout << "physically rm" << endl;
+                bool expected2 = false;
+                location->node->removed.compare_exchange_weak(expected2, true); //logically remove
+                Node* temp;
+                if (location->node->left == nullptr && location->node->right == nullptr){
+                  temp = nullptr;
+                } else if (location->node->left == nullptr && location->node->right != nullptr){
+                  temp = location->node->right;
+                } else{
+                  temp = location->node->left;
+                }
+
+                if (location->p == nullptr){ //its the root
+                  root = temp;
+                  if (temp == nullptr){
+                    ROOT_STATUS expectedRoot = ROOT_STATUS::FILLED;
+                    treeEmpty.compare_exchange_weak(expectedRoot, ROOT_STATUS::EMPTY);
+                  }
+                  //prob free some shit
+                  return;
+                } else{
+                  expected = FLAG::NOT_USE;
+                  while(!location->p->flag.compare_exchange_weak(expected, FLAG::CHILD_IN_USE) && (temp == nullptr || temp->flag.compare_exchange_weak(expected, FLAG::NOT_USE))){
+                  }
+                }
+                bool isLeft = false;
+                if (location->p->left == location->node) isLeft = true;
+                Node* expectedChild = location->node;
+                //physically removing
+                if (isLeft){
+                  location->p->left.compare_exchange_weak(expectedChild, temp);
+                } else{
+                  location->p->right.compare_exchange_weak(expectedChild, temp);
+                }
+                //can prob free shit here
+
+                expected = FLAG::CHILD_IN_USE;
+                location->p->flag.compare_exchange_weak(expected, FLAG::NOT_USE);
+
+                return;
+              }
+          }
+      }
+    }
+  }
 
 
 
