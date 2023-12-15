@@ -32,14 +32,19 @@ int main(int argc, char *argv[]){
       tree.find(stoi(task.substr(2)));
     } else if (task[0] == 'i'){
       tree.insert(stoi(task.substr(2)));
+    } else if (task[0] == 'r') {
+      tree.insert(stoi(task.substr(2)));
     }
   }
   auto stop = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  auto duration = chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-  bool error = checkBST(tree.root);
+  bool correct = checkBST(tree.root);
 
-  tree.print();
+  if (!correct) {
+    cout << "VIOLATED BST BOY" << endl;
+  }
+  // tree.print();
 
   cout << "Time taken: " << duration.count() << endl;
 }

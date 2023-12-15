@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define NUMTHREADS 4
+#define NUMTHREADS 16
 
 typedef struct{
   pthread_t thread_id;
@@ -31,6 +31,8 @@ void* doTest(void* tinfo){
       splayTree->find(stoi(task.substr(2)));
     } else if (task[0] == 'i'){
       splayTree->insert(stoi(task.substr(2)));
+    } else if (task[0] == 'r'){
+      splayTree->remove(stoi(task.substr(2)));
     }
   }
   //only these inserts, ideally im gonna make different files
@@ -58,7 +60,7 @@ int main(int argc, char *argv[]){
     int worker = 0;
     while (getline(file, line)){
       threads[worker].work.push_back(line);
-      if (worker = NUMTHREADS-1){
+      if (worker == NUMTHREADS-1){
         worker = 0;
       } else{
         worker++;
@@ -79,11 +81,11 @@ int main(int argc, char *argv[]){
     pthread_join(threads[i].thread_id, NULL);
   }
   auto stop = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  auto duration = chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
   bool error = checkBST(tree->root);
 
-  tree->print();
+  // tree->print();
 
   cout << "Time taken: " << duration.count() << endl;
 }
