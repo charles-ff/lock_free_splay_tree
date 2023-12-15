@@ -42,7 +42,7 @@ void* doTest(void* tinfo){
   SplayTree* splayTree = thread->tree;
   for (auto task : thread->work){
     if (task[0] == 'f'){
-      // splayTree->find(stoi(task.substr(2)));
+      splayTree->find(stoi(task.substr(2)));
     } else if (task[0] == 'i'){
       splayTree->insert(stoi(task.substr(2)));
     } else if (task[0] == 'r'){
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]){
     cout << "Violated BST invariant!!" << endl;
   }
 
-  tree->print();
+  // tree->print();
 
   cout << "Time taken: " << duration.count() << endl;
 }
